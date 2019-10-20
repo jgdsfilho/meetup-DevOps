@@ -1,0 +1,22 @@
+[uwsgi]
+module = wsgi:app
+socket = 0.0.0.0:5000
+protocol = http
+chmod-socket = 660
+
+master = true
+processes = {{ uwsgi_conf.processes }}
+
+chdir: /root/project
+
+socket = myproject.sock
+chmod-socket = 660
+vacuum = true
+
+die-on-term = true
+
+enable-threads = {{ uwsgi_conf.enabled_threads }}
+threads = {{ uwsgi_conf.threads }}
+uid = root
+gid = root
+logto = /var/log/uwsgi/app/uwsgi.log

@@ -1,0 +1,13 @@
+[Unit]
+Description=uWSGI instance to serve myproject
+After=network.target
+
+[Service]
+User=root
+Group=root
+WorkingDirectory=/root
+Environment="PATH=/usr/bin/"
+ExecStart=/usr/bin/uwsgi_python3  --ini /etc/uwsgi/apps-enabled/uwsgi.ini
+
+[Install]
+WantedBy=multi-user.target

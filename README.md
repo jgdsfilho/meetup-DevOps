@@ -126,16 +126,69 @@
   logto = /var/log/uwsgi/app/uwsgi.log
 
   ```
-  * Declarar as variáveis que serão usadas no template no arquivo uwsgi/defaults/main.yml.
-    ```
-    uwsgi_conf:
-      enabled_threads: true
-      processes: 2
-      threads: 4
+* Declarar as variáveis que serão usadas no template no arquivo uwsgi/defaults/main.yml.
+  ```
+  uwsgi_conf:
+    enabled_threads: true
+    processes: 2
+    threads: 4
 
-    more_uwsgi_conf:
-      harakiri: 30
-      reload-on-rss: 500
+  more_uwsgi_conf:
+    harakiri: 30
+    reload-on-rss: 500
 
-    ```
+  ```
+* Criar o play para enviar esse arquivo do template para o servidor:
+  ```
+  - name: ensure file of configuration uwsgi is present
+  template:
+    src: templates/uwsgi.ini.j2
+    dest: /etc/uwsgi/apps-enabled/uwsgi.ini
+  ```
+  
+### Copiando o arquivo com o app flask
+* Vamos enviar um app em flask, que utilizaremos para testar nosssa configuração do uwsgi. Salvar o aruivo project.py e wsgi.py que estão nesse repositório em uwsgi/files/
+* Abaixo o play que envia o arquivo para o servidor.
+  ```
+  - name: Copy flask project to {{ansible_hostname}}
+  copy:
+    src: files/{{item}}
+    dest: /root/
+  with_items:
+    - project.py
+    - wsgi.py
+
+  ```
+### Copiando o arquivo do systemd que será utilizado para start/stop/restart do uwsgi
+* No repositório tem um arquivo chamado project.service que deve ser salvo em uwsgi/files/
+* O play abaixo envia o arquivo para o servidor\
+  ```
+  - name: copy systemd file
+  copy:
+    src: files/project.service
+    dest: /etc/systemd/system/
+
+  ```
+* Habilitar o arquivo de systemd e startar o uwsgi.
+  ```
+  - name: Start uwsgi with systemd
+  systemd:
+    name: project.service
+    enabled: yes
+    state: started
+    daemon-reload: yes
+  ```
+### Utilizando o mod ini_files (apenas demostrativo)
+* Utilizando o module ini_file para adicionar algumas informações a mais no arquivo de configuração do uwsgi.
+  ```
+  - name: add harakiri and max memory usage on uwsgi conf
+  ini_file:
+    path: /etc/uwsgi/apps-enabled/uwsgi.ini
+    section: uwsgi
+    option: "{{ item.key }}"
+    value: "{{ item.value }}"
+  loop: "{{ more_uwsgi_conf | dict2items }}"
+  notify: restart uwsgi
+
+  ```
 
